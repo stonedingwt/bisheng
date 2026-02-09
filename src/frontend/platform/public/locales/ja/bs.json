@@ -132,7 +132,8 @@
     "forBestExperience": "より快適にご利用いただくため、PC からアクセスしてください",
     "onlineDocumentation": "オンラインドキュメント",
     "changePwd": "パスワード変更",
-    "scheduledTask": "タスク"
+    "scheduledTask": "タスク",
+    "tokenStats": "消費統計"
   },
   "space": {
     "manageSpaces": "スペース管理",
@@ -1748,5 +1749,33 @@
   "chatTips": "1. 中国の《インターネットセキュリティ法》、《データセキュリティ法》、《個人情報保護法》および《生成型人工知能サービスセキュリティ基本要求》を遵守してください；\n2. 企業の機密管理規定に該当する機密データのアップロードは禁止されています；\n3. 個人情報を含むデータのアップロードは禁止されています；\n4. 悪意のあるプログラムやウイルスを含むファイルのアップロードは禁止されています；\n5. 攻撃的なコードをAIで生成することは禁止されています；\n6. 爆発物、テロ、ポルノ、国家安全保障や公共安全に害を及ぼす違法情報などをAIに質問することは禁止されています；\n7. AIが生成する内容は企業の機密管理規定に従います。ユーザーは生成内容の合理性を実際の状況に基づいて判断し、AIの幻覚によるリスクを避ける必要があります。",
   "com_preview_type_unsupported": "このファイルは現在プレビューに対応していません",
   "splitSettingsTooltip": "セグメントの目標長と隣接するセグメントの重複長を設定し、コンテキストの繋がりを制御します。原文の画像を保持するかどうかを選択できます。",
-  "splitMethodTooltip": "ルールの優先順位に従って分割位置を決定します（ドラッグで調整可能）。カスタム正規表現をサポートし、一致した内容の前または後で分割するかを選択できます。"
+  "splitMethodTooltip": "ルールの優先順位に従って分割位置を決定します（ドラッグで調整可能）。カスタム正規表現をサポートし、一致した内容の前または後で分割するかを選択できます。",
+  "tokenStats": {
+    "title": "Token消費統計",
+    "subtitle": "ユーザーとアプリケーションのToken使用状況を表示",
+    "userReport": "ユーザーToken消費",
+    "appReport": "アプリToken消費",
+    "userName": "ユーザー名",
+    "appName": "アプリ名",
+    "appType": "アプリ種類",
+    "totalTokens": "合計Token",
+    "inputTokens": "入力Token",
+    "outputTokens": "出力Token",
+    "invokeCount": "呼び出し回数",
+    "actions": "操作",
+    "viewDetail": "詳細",
+    "loadMore": "もっと見る",
+    "searchUser": "ユーザー検索...",
+    "searchApp": "アプリ検索...",
+    "totalUsers": "ユーザー総数",
+    "totalApps": "アプリ総数",
+    "backToList": "戻る",
+    "appBreakdown": "アプリ別内訳",
+    "dailyBreakdown": "日別内訳",
+    "dailyTrend": "日次消費トレンド",
+    "userRanking": "ユーザー消費ランキング",
+    "periodTotal": "期間合計",
+    "date": "日付",
+    "noData": "データなし"
+  }
 }

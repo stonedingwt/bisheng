@@ -45,6 +45,7 @@ const SystemPage = lazy(() => import("@/pages/SystemPage"));
 const ScheduledTaskPage = lazy(() => import("@/pages/ScheduledTaskPage"));
 const ResoucePage = lazy(() => import("@/pages/resoucePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const TokenStatsPage = lazy(() => import("@/pages/TokenStatsPage"));
 
 const baseConfig = {
   //@ts-ignore
@@ -97,6 +98,7 @@ const privateRouter = [
       { path: "label/:id", element: <TaskApps /> },
       { path: "label/chat/:id/:fid/:cid/:type", element: <TaskAppChats /> },
       { path: "dashboard", element: <Dashboard /> },
+      { path: "token-stats", element: <TokenStatsPage /> },
     ],
   },
   { path: "dashboard/:id", element: <EditorPage />, errorElement: <RouteErrorBoundary />, permission: 'board', },

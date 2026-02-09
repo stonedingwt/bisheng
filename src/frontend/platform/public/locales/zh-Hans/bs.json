@@ -132,7 +132,8 @@
     "forBestExperience": "为了您的良好体验，请在 PC 端访问该网站",
     "onlineDocumentation": "在线文档",
     "changePwd": "修改密码",
-    "scheduledTask": "任  务"
+    "scheduledTask": "任  务",
+    "tokenStats": "消耗统计"
   },
   "space": {
     "manageSpaces": "管理空间",
@@ -1720,5 +1721,33 @@
   "com_sop_select_file": "选择文件",
   "more": "更多",
   "chatTips": "1. 请遵守《中华人民共和国网络安全法》《中华人民共和国数据安全法》《中华人民共和国个人信息保护法》及《生成式人工智能服务安全基本要求》；\n2. 禁止上传涉及公司保密管理规定范围内的保密数据；\n3. 禁止上传包含个人隐私信息的数据；\n4. 禁止上传包含恶意程序或病毒的文件；\n5. 禁止使用 AI 生成攻击性代码；\n6. 禁止向 AI 提问包括但不限于涉爆涉恐涉黄及危害国家安全及公共安全的违法不良信息；\n7. AI 生成内容受到公司保密管理规定约束。用户应根据实际情况判断生成内容的合理性，避免 AI 幻觉造成的风险。",
-  "com_preview_type_unsupported": "此文件暂不支持预览"
+  "com_preview_type_unsupported": "此文件暂不支持预览",
+  "tokenStats": {
+    "title": "Token 消耗统计",
+    "subtitle": "查看用户和应用的 Token 使用情况",
+    "userReport": "用户 Token 消耗",
+    "appReport": "应用 Token 消耗",
+    "userName": "用户名",
+    "appName": "应用名称",
+    "appType": "应用类型",
+    "totalTokens": "总消耗 Token",
+    "inputTokens": "输入 Token",
+    "outputTokens": "输出 Token",
+    "invokeCount": "调用次数",
+    "actions": "操作",
+    "viewDetail": "详情",
+    "loadMore": "加载更多",
+    "searchUser": "搜索用户名...",
+    "searchApp": "搜索应用名...",
+    "totalUsers": "用户总数",
+    "totalApps": "应用总数",
+    "backToList": "返回列表",
+    "appBreakdown": "应用消耗明细",
+    "dailyBreakdown": "每日消耗明细",
+    "dailyTrend": "每日消耗趋势",
+    "userRanking": "用户消耗排行",
+    "periodTotal": "期间总消耗",
+    "date": "日期",
+    "noData": "暂无数据"
+  }
 }
