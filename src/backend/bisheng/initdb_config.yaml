@@ -31,6 +31,13 @@ system_login_method:
   # sso系统登录配置（毕昇商业扩展套件功能，开源版无需配置）
   gateway_login: false # 是否开启sso登录
   admin_username: admin # 从 SSO/LDAP 注册的管理员用户名
+  # Azure Active Directory SSO配置
+  aad_sso:
+    enabled: false # 是否启用AAD SSO登录
+    client_id: "" # AAD 应用的 Client ID (Application ID)
+    client_secret: "" # AAD 应用的 Client Secret
+    tenant_id: "" # AAD 租户 ID (Directory ID)
+    redirect_uri: "" # AAD 登录回调地址，如 http://your-domain/api/v1/oauth2/aad/callback
 
 # 登陆页面是否需要输入验证码，可设置为True或False
 use_captcha: True

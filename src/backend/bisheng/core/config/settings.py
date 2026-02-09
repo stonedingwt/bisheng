@@ -55,11 +55,21 @@ class PasswordConf(BaseModel):
     max_error_times: Optional[int] = Field(default=0, description='Maximum number of errors, after which the user will be banned')
 
 
+class AadSsoConfig(BaseModel):
+    """ Azure Active Directory SSO Config """
+    enabled: bool = Field(default=False, description='是否启用AAD SSO登录')
+    client_id: Optional[str] = Field(default=None, description='AAD 应用的 Client ID')
+    client_secret: Optional[str] = Field(default=None, description='AAD 应用的 Client Secret')
+    tenant_id: Optional[str] = Field(default=None, description='AAD 租户 ID')
+    redirect_uri: Optional[str] = Field(default=None, description='AAD 登录回调地址，如 http://your-domain/api/v1/oauth2/aad/callback')
+
+
 class SystemLoginMethod(BaseModel):
     """ System Login Method Config """
     bisheng_pro: bool = Field(default=False, description='Whether it is a commercial version, Verify Configuredlicense')
     admin_username: Optional[str] = Field(default=None, description='Admin username registered via web')
     allow_multi_login: bool = Field(default=True, description='Whether to allow multi-sign-on')
+    aad_sso: AadSsoConfig = Field(default_factory=AadSsoConfig, description='Azure AD SSO配置')
 
 
 class MilvusConf(BaseModel):

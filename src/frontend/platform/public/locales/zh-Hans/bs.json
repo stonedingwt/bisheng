@@ -96,7 +96,8 @@
     "registrationSuccess": "注册成功,请输入密码进行登录",
     "pleaseEnterCaptcha": "请输入验证码",
     "passwordExpired": "您的密码已过期，请及时修改",
-    "otherMethods": "其他登录方式"
+    "otherMethods": "其他登录方式",
+    "aadLogin": "Azure AD 登录"
   },
   "menu": {
     "user": "用户",

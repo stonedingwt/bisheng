@@ -96,7 +96,8 @@
     "registrationSuccess": "登録に成功しました。ログイン用のパスワードを入力してください",
     "pleaseEnterCaptcha": "認証コードを入力してください",
     "passwordExpired": "パスワードの有効期限が切れています。お早めに変更してください",
-    "otherMethods": "その他のログイン方法"
+    "otherMethods": "その他のログイン方法",
+    "aadLogin": "Azure AD ログイン"
   },
   "menu": {
     "user": "ユーザー",

@@ -95,6 +95,10 @@ def get_env():
     env['version'] = __version__
     env['enable_etl4lm'] = bool(etl_for_lm_url)
 
+    # AAD SSO 状态
+    aad_sso = bisheng_settings.get_system_login_method().aad_sso
+    env['aad_sso_enabled'] = (aad_sso.enabled and bool(aad_sso.client_id) and bool(aad_sso.tenant_id))
+
     return resp_200(env)
 
 

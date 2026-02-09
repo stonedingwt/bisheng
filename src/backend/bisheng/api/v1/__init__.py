@@ -1,3 +1,4 @@
+from bisheng.api.v1.aad_oauth import router as aad_oauth_router
 from bisheng.api.v1.assistant import router as assistant_router
 from bisheng.api.v1.audit import router as audit_router
 from bisheng.api.v1.chat import router as chat_router
@@ -19,6 +20,7 @@ from bisheng.tool.api.tool import router as tool_router
 from bisheng.user.api.user import router as user_router
 
 __all__ = [
+    'aad_oauth_router',
     'chat_router',
     'endpoints_router',
     'validate_router',

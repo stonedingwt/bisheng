@@ -80,7 +80,7 @@ export function getUserGroupsProApi() {
 // GET sso URL
 export function getSSOurlApi() {
     // return Promise.resolve(url)
-    return axios.get(`/api/oauth2/list`)
+    return axios.get(`/api/v1/oauth2/list`)
 }
 
 export async function getKeyApi() {

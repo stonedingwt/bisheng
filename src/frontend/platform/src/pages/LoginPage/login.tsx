@@ -213,7 +213,7 @@ export const LoginPage = () => {
                                         disabled={isLoading} onClick={handleRegister} >{t('login.registerButton')}</Button>
                                 </>
                         }
-                        {appConfig.isPro && <LoginBridge onHasLdap={setIsLDAP} />}
+                        {(appConfig.isPro || appConfig.aadSsoEnabled) && <LoginBridge onHasLdap={setIsLDAP} aadEnabled={appConfig.aadSsoEnabled} />}
                     </div>
                     <div className=" absolute right-[16px] bottom-[16px] flex">
                         <span className="mr-4 text-sm text-gray-400 relative top-2">v{json.version}</span>

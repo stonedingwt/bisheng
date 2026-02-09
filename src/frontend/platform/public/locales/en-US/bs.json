@@ -95,7 +95,8 @@
     "registrationSuccess": "Registration successful. Please enter your password to log in",
     "pleaseEnterCaptcha": "Please enter captcha",
     "passwordExpired": "Your password has expired, please change it promptly",
-    "otherMethods": "Other login methods"
+    "otherMethods": "Other login methods",
+    "aadLogin": "Azure AD Login"
   },
   "menu": {
     "user": "User",
