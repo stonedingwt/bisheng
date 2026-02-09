@@ -54,6 +54,7 @@ class FlowBase(SQLModelSerializable):
     logo: Optional[str] = Field(default=None, index=False)
     status: Optional[int] = Field(index=False, default=1)
     flow_type: Optional[int] = Field(index=False, default=1)
+    space_id: Optional[int] = Field(default=None, index=True, description='所属空间ID')
     guide_word: Optional[str] = Field(default=None, sa_column=Column(String(length=1000)))
     create_time: Optional[datetime] = Field(default=None, sa_column=Column(
         DateTime, nullable=False, index=True, server_default=text('CURRENT_TIMESTAMP')))
@@ -387,18 +388,22 @@ class FlowDao(FlowBase):
                      id_extra: list = None,
                      id_list_not_in: list = None,
                      page: int = 0,
-                     limit: int = 0) -> (List[Dict], int):
+                     limit: int = 0,
+                     space_id: int = None) -> (List[Dict], int):
         """ Get all apps Contains skills, assistants, workflows """
+        from sqlalchemy import literal_column
         sub_query = select(
             Flow.id, Flow.name, Flow.description, Flow.flow_type, Flow.logo, Flow.user_id,
-            Flow.status, Flow.create_time, Flow.update_time).union_all(
+            Flow.status, Flow.create_time, Flow.update_time, Flow.space_id).union_all(
             select(Assistant.id, Assistant.name, Assistant.desc, FlowType.ASSISTANT.value,
                    Assistant.logo, Assistant.user_id, Assistant.status, Assistant.create_time,
-                   Assistant.update_time).where(Assistant.is_delete == 0)).subquery()
+                   Assistant.update_time, literal_column('NULL').label('space_id')
+                   ).where(Assistant.is_delete == 0)).subquery()
 
         statement = select(sub_query.c.id, sub_query.c.name, sub_query.c.description,
                            sub_query.c.flow_type, sub_query.c.logo, sub_query.c.user_id,
-                           sub_query.c.status, sub_query.c.create_time, sub_query.c.update_time)
+                           sub_query.c.status, sub_query.c.create_time, sub_query.c.update_time,
+                           sub_query.c.space_id)
         count_statement = select(func.count(sub_query.c.id))
         if name:
             statement = statement.where(sub_query.c.name.like(f'%{name}%'))
@@ -412,6 +417,9 @@ class FlowDao(FlowBase):
         if flow_type is not None:
             statement = statement.where(sub_query.c.flow_type == flow_type)
             count_statement = count_statement.where(sub_query.c.flow_type == flow_type)
+        if space_id is not None:
+            statement = statement.where(sub_query.c.space_id == space_id)
+            count_statement = count_statement.where(sub_query.c.space_id == space_id)
         if user_id is not None:
             if id_extra:
                 statement = statement.where(
@@ -441,9 +449,40 @@ class FlowDao(FlowBase):
                 'user_id': one[5],
                 'status': one[6],
                 'create_time': one[7],
-                'update_time': one[8]
+                'update_time': one[8],
+                'space_id': one[9]
             })
         return data, total
+
+    @classmethod
+    def update_flow_space(cls, flow_id: str, space_id: int):
+        """更新应用所属空间"""
+        from sqlmodel import update as sql_update
+        with get_sync_db_session() as session:
+            statement = sql_update(Flow).where(Flow.id == flow_id).values(space_id=space_id)
+            session.exec(statement)
+            session.commit()
+
+    @classmethod
+    def batch_update_space(cls, old_space_id: int, new_space_id: int):
+        """批量更新空间 (空间删除时使用)"""
+        from sqlmodel import update as sql_update
+        with get_sync_db_session() as session:
+            statement = sql_update(Flow).where(Flow.space_id == old_space_id).values(
+                space_id=new_space_id)
+            session.exec(statement)
+            session.commit()
+
+    @classmethod
+    def batch_update_space_by_ids(cls, flow_ids: list, space_id: int):
+        """按 ID 列表批量更新空间"""
+        from sqlmodel import update as sql_update
+        if not flow_ids:
+            return
+        with get_sync_db_session() as session:
+            statement = sql_update(Flow).where(Flow.id.in_(flow_ids)).values(space_id=space_id)
+            session.exec(statement)
+            session.commit()
 
     @classmethod
     async def get_one_flow_simple(cls, flow_id: str) -> Optional[Flow]:

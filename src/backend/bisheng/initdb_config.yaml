@@ -38,6 +38,13 @@ system_login_method:
     client_secret: "" # AAD 应用的 Client Secret
     tenant_id: "" # AAD 租户 ID (Directory ID)
     redirect_uri: "" # AAD 登录回调地址，如 http://your-domain/api/v1/oauth2/aad/callback
+  # 企业微信扫码登录配置
+  wecom_sso:
+    enabled: false # 是否启用企业微信扫码登录
+    corp_id: "" # 企业微信 CorpID (企业ID)
+    agent_id: "" # 企业微信应用 AgentId
+    secret: "" # 企业微信应用 Secret
+    redirect_uri: "" # 企业微信登录回调地址，如 http://your-domain/api/v1/oauth2/wecom/callback
 
 # 登陆页面是否需要输入验证码，可设置为True或False
 use_captcha: True

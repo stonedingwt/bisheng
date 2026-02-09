@@ -1,7 +1,9 @@
 # Router for base api
 from fastapi import APIRouter
 
-from bisheng.api.v1 import (aad_oauth_router, assistant_router, audit_router, chat_router,
+from bisheng.api.v1 import (aad_oauth_router, wecom_oauth_router, scheduled_task_router,
+                            workspace_space_router, assistant_router, audit_router,
+                            chat_router,
                             component_router,
                             endpoints_router, evaluation_router, flows_router,
                             group_router, mark_router,
@@ -23,6 +25,9 @@ from bisheng.telemetry_search.api.router import router as telemetry_search_route
 
 router = APIRouter(prefix='/api/v1', )
 router.include_router(aad_oauth_router)
+router.include_router(wecom_oauth_router)
+router.include_router(scheduled_task_router)
+router.include_router(workspace_space_router)
 router.include_router(chat_router)
 router.include_router(endpoints_router)
 router.include_router(validate_router)

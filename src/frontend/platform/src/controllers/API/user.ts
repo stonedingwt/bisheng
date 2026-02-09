@@ -100,6 +100,42 @@ export async function getSysConfigApi(): Promise<string> {
 export async function setSysConfigApi(data) {
   return await axios.post(`/api/v1/config/save`, data);
 }
+
+/**
+ * 获取 AAD SSO 配置
+ */
+export async function getAadSsoConfigApi(): Promise<any> {
+  return await axios.get(`/api/v1/oauth2/aad/config`);
+}
+
+/**
+ * 保存 AAD SSO 配置
+ */
+export async function saveAadSsoConfigApi(data: any): Promise<any> {
+  return await axios.post(`/api/v1/oauth2/aad/config`, data);
+}
+
+/**
+ * 获取企业微信 SSO 配置
+ */
+export async function getWecomSsoConfigApi(): Promise<any> {
+  return await axios.get(`/api/v1/oauth2/wecom/config`);
+}
+
+/**
+ * 保存企业微信 SSO 配置
+ */
+export async function saveWecomSsoConfigApi(data: any): Promise<any> {
+  return await axios.post(`/api/v1/oauth2/wecom/config`, data);
+}
+
+/**
+ * 获取企业微信扫码二维码参数 (用于嵌入式扫码)
+ */
+export async function getWecomQrParamsApi(): Promise<any> {
+  return await axios.get(`/api/v1/oauth2/wecom/qr-params`);
+}
+
 /**
  * 根据角色获取技能列表
  */

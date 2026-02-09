@@ -82,6 +82,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           websocketHost: res.websocket_url,
           isPro: !!res.pro,
           aadSsoEnabled: !!res.aad_sso_enabled,
+          wecomSsoEnabled: !!res.wecom_sso_enabled,
           chatPrompt: !!res.application_usage_tips,
           noFace: !res.show_github_and_help,
           register: !!res.enable_registration,

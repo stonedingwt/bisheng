@@ -42,6 +42,7 @@ const Finetune = lazy(() => import("@/pages/ModelPage/finetune").then(module => 
 const Management = lazy(() => import("@/pages/ModelPage/manage"));
 const Report = lazy(() => import("@/pages/Report"));
 const SystemPage = lazy(() => import("@/pages/SystemPage"));
+const ScheduledTaskPage = lazy(() => import("@/pages/ScheduledTaskPage"));
 const ResoucePage = lazy(() => import("@/pages/resoucePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 
@@ -86,6 +87,7 @@ const privateRouter = [
       { path: "model/finetune", element: <Finetune /> },
       { path: "model", element: <Navigate to="management" replace /> },
       { path: "sys", element: <SystemPage />, permission: 'sys' },
+      { path: "scheduled-tasks", element: <ScheduledTaskPage /> },
       { path: "log", element: <LogPage /> },
       { path: "log/chatlog/:fid/:cid/:type", element: <AppChatDetail /> },
       { path: "evaluation", element: <EvaluatingPage /> },

@@ -165,11 +165,18 @@ def create_flow(*, request: Request, flow: FlowCreate, login_user: UserPayload =
                 select(Flow).where(Flow.name == flow.name, Flow.flow_type == FlowType.WORKFLOW.value,
                                    Flow.user_id == login_user.user_id)).first():
             raise WorkflowNameExistsError.http_exception()
+    logger.info(f'create_flow received space_id={flow.space_id}')
     flow.user_id = login_user.user_id
     db_flow = Flow.model_validate(flow)
     db_flow.create_time = None
     db_flow.update_time = None
     db_flow.flow_type = FlowType.WORKFLOW.value
+    # 确保工作流有 space_id, 如果没有则分配到默认空间
+    if not db_flow.space_id:
+        from bisheng.database.models.workspace_space import WorkspaceSpaceDao
+        default_space = next((s for s in WorkspaceSpaceDao.get_all_spaces() if s.is_default), None)
+        if default_space:
+            db_flow.space_id = default_space.id
     # Create New Skill
     db_flow = FlowDao.create_flow(db_flow, FlowType.WORKFLOW.value)
 
@@ -301,10 +308,11 @@ def read_flows(*,
                page_size: int = Query(default=10, description='Items per page'),
                page_num: int = Query(default=1, description='Page'),
                status: int = None,
-               managed: bool = Query(default=False, description='Whether to query the list of apps with administrative permissions')):
+               managed: bool = Query(default=False, description='Whether to query the list of apps with administrative permissions'),
+               space_id: int = Query(default=None, description='Space ID to filter by')):
     """Read all flows."""
     data, total = WorkFlowService.get_all_flows(login_user, name, status, tag_id, flow_type, page_num, page_size,
-                                                managed)
+                                                managed, space_id=space_id)
     return resp_200(data={
         'data': data,
         'total': total

@@ -9,6 +9,8 @@ export type AppConfig = {
     sso: boolean;
     /** 是否启用 AAD SSO 登录 */
     aad_sso_enabled: boolean;
+    /** 是否启用企业微信扫码登录 */
+    wecom_sso_enabled: boolean;
     application_usage_tips: boolean;
     show_github_and_help: boolean;
     version: string;

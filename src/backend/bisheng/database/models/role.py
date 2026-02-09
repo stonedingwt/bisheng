@@ -42,6 +42,13 @@ class RoleCreate(RoleBase):
 class RoleDao(RoleBase):
 
     @classmethod
+    def get_all_roles(cls) -> List[Role]:
+        """获取所有角色 (不含系统管理员角色)"""
+        with get_sync_db_session() as session:
+            statement = select(Role).where(Role.id > AdminRole).order_by(Role.id)
+            return session.exec(statement).all()
+
+    @classmethod
     def get_role_by_groups(cls, group: List[int], keyword: str = None, page: int = 0, limit: int = 0) -> List[Role]:
         """
         Get a list of roles within a user group, Does not contain the System Administrator role

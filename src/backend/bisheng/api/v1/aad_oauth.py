@@ -5,20 +5,26 @@ Azure Active Directory (AAD) SSO OAuth2 集成模块
 - GET /oauth2/list: 返回可用的 SSO 登录方式列表
 - GET /oauth2/aad/login: 重定向到 AAD 登录页面
 - GET /oauth2/aad/callback: 处理 AAD 登录回调，完成用户认证
+- GET /oauth2/aad/config: 获取 AAD SSO 配置 (管理员)
+- POST /oauth2/aad/config: 保存 AAD SSO 配置 (管理员)
 """
 import hashlib
 import secrets
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+import yaml
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from loguru import logger
+from pydantic import BaseModel, Field
 
 from bisheng.api.services.audit_log import AuditLogService
 from bisheng.api.v1.schemas import resp_200
+from bisheng.common.dependencies.user_deps import UserPayload
+from bisheng.common.models.config import Config, ConfigDao, ConfigKeyEnum
 from bisheng.common.services.config_service import settings
-from bisheng.core.cache.redis_manager import get_redis_client
+from bisheng.core.cache.redis_manager import get_redis_client, get_redis_client_sync
 from bisheng.database.models.user_group import UserGroupDao
 from bisheng.user.domain.models.user import User, UserDao
 from bisheng.user.domain.services.auth import AuthJwt, LoginUser
@@ -53,15 +59,22 @@ async def get_sso_list():
         'wx': '',
         'ldap': False,
         'aad': False,
+        'wecom': False,
     }
 
+    login_method = settings.get_system_login_method()
+
     # 检查 AAD SSO 配置
-    aad_config = _get_aad_config()
+    aad_config = login_method.aad_sso
     if aad_config.enabled and aad_config.client_id and aad_config.tenant_id:
         result['aad'] = True
 
+    # 检查企业微信 SSO 配置
+    wecom_config = login_method.wecom_sso
+    if wecom_config.enabled and wecom_config.corp_id and wecom_config.agent_id and wecom_config.secret:
+        result['wecom'] = True
+
     # 兼容已有的商业版SSO逻辑
-    login_method = settings.get_system_login_method()
     if login_method.bisheng_pro:
         result['sso'] = ''  # 商业版SSO URL由网关提供
 
@@ -274,3 +287,83 @@ def _get_frontend_base_url(request: Request) -> str:
     scheme = request.url.scheme
     host = request.headers.get('host', request.url.hostname)
     return f'{scheme}://{host}'
+
+
+# ========== AAD SSO 配置管理 API ==========
+
+class AadSsoConfigRequest(BaseModel):
+    """AAD SSO 配置请求模型"""
+    enabled: bool = Field(default=False, description='是否启用AAD SSO登录')
+    client_id: str = Field(default='', description='AAD 应用的 Client ID')
+    client_secret: str = Field(default='', description='AAD 应用的 Client Secret')
+    tenant_id: str = Field(default='', description='AAD 租户 ID')
+    redirect_uri: str = Field(default='', description='AAD 登录回调地址')
+
+
+@router.get('/oauth2/aad/config')
+async def get_aad_config(admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
+    """获取 AAD SSO 配置 (仅管理员)"""
+    aad_config = _get_aad_config()
+    return resp_200({
+        'enabled': aad_config.enabled,
+        'client_id': aad_config.client_id or '',
+        'client_secret': _mask_secret(aad_config.client_secret) if aad_config.client_secret else '',
+        'tenant_id': aad_config.tenant_id or '',
+        'redirect_uri': aad_config.redirect_uri or '',
+    })
+
+
+@router.post('/oauth2/aad/config')
+async def save_aad_config(config: AadSsoConfigRequest,
+                          admin_user: UserPayload = Depends(UserPayload.get_admin_user)):
+    """保存 AAD SSO 配置 (仅管理员)"""
+    try:
+        # 从数据库获取当前完整配置
+        db_config = ConfigDao.get_config(ConfigKeyEnum.INIT_DB)
+        if not db_config:
+            raise HTTPException(status_code=500, detail='系统配置未找到')
+
+        config_dict = yaml.safe_load(db_config.value)
+        if not isinstance(config_dict, dict):
+            raise HTTPException(status_code=500, detail='系统配置格式错误')
+
+        # 获取当前的 aad_sso 配置
+        system_login = config_dict.get('system_login_method', {})
+        old_aad = system_login.get('aad_sso', {})
+
+        # 如果 client_secret 是掩码值（包含*），则保留原值
+        new_secret = config.client_secret
+        if new_secret and '•' in new_secret:
+            new_secret = old_aad.get('client_secret', '')
+
+        # 更新 aad_sso 配置
+        system_login['aad_sso'] = {
+            'enabled': config.enabled,
+            'client_id': config.client_id,
+            'client_secret': new_secret,
+            'tenant_id': config.tenant_id,
+            'redirect_uri': config.redirect_uri,
+        }
+        config_dict['system_login_method'] = system_login
+
+        # 保存回数据库 (保持 YAML 格式)
+        db_config.value = yaml.dump(config_dict, allow_unicode=True, default_flow_style=False)
+        ConfigDao.insert_config(db_config)
+
+        # 清除 Redis 缓存使配置立即生效
+        get_redis_client_sync().delete('config:initdb_config')
+
+        logger.info(f'AAD SSO config updated by admin: {admin_user.user_name}, enabled={config.enabled}')
+        return resp_200(message='AAD SSO 配置保存成功')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f'Failed to save AAD SSO config: {e}')
+        raise HTTPException(status_code=500, detail=f'保存配置失败: {str(e)}')
+
+
+def _mask_secret(secret: str) -> str:
+    """掩码敏感信息，仅显示前4位和后4位"""
+    if not secret or len(secret) <= 8:
+        return '•' * len(secret) if secret else ''
+    return secret[:4] + '•' * (len(secret) - 8) + secret[-4:]

@@ -25,8 +25,8 @@ type ModalRef = {
     edit: (type: string, appId: string) => void;
 };
 
-const CreateApp = forwardRef<ModalRef, ModalProps & { loca?: any }>(
-    ({ onSave, loca }, ref) => {
+const CreateApp = forwardRef<ModalRef, ModalProps & { loca?: any, activeSpaceId?: number | null }>(
+    ({ onSave, loca, activeSpaceId }, ref) => {
         const [open, setOpen] = useState(false);
         const [formData, setFormData] = useState({
             url: '',
@@ -43,10 +43,12 @@ const CreateApp = forwardRef<ModalRef, ModalProps & { loca?: any }>(
         const [appId, setAppId] = useState<string>('');
         const [errors, setErrors] = useState<any>({});
 
+        const [spaceId, setSpaceId] = useState<number | null>(null);
         useImperativeHandle(ref, () => ({
-            open(type: AppType, tempId?: number) {
+            open(type: AppType, tempId?: number, activeSpace?: number | null) {
                 setType(type);
                 setIsEditMode(false);
+                setSpaceId(activeSpace ?? activeSpaceId ?? null);
                 setFormData({
                     url: '',
                     name: '',
@@ -183,7 +185,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                             )
                         }
                     })
-                    const res = await captureAndAlertRequestErrorHoc(createWorkflowApi(formData.name, formData.desc, formData.url, tempDataRef.current));
+                    const res = await captureAndAlertRequestErrorHoc(createWorkflowApi(formData.name, formData.desc, formData.url, tempDataRef.current, spaceId));
                     if (res) navigate('/flow/' + res.id);
                 }
             } else {
@@ -196,7 +198,7 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                     }
                 } else {
                     if (appId) return navigate('/flow/' + appId);
-                    const workflow = await captureAndAlertRequestErrorHoc(createWorkflowApi(formData.name, formData.desc, formData.url));
+                    const workflow = await captureAndAlertRequestErrorHoc(createWorkflowApi(formData.name, formData.desc, formData.url, undefined, spaceId));
                     if (workflow) {
                         const navigateToFlow = (id) => navigate(`/flow/${id}`);
                         if (!appConfig.isPro) return navigateToFlow(workflow.id);

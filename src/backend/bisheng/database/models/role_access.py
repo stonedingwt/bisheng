@@ -61,6 +61,7 @@ class AccessType(Enum):
     WORKFLOW_WRITE = 10  # Workflow write permissions
     DASHBOARD = 11  # Kanban Reading Permissions
     DASHBOARD_WRITE = 12  # Kanban writing permissions
+    SPACE_READ = 13  # 空间读取权限
 
     WEB_MENU = 99  # Frontend Menu Bar Permission Restrictions
 

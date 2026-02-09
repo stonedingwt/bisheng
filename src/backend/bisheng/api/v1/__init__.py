@@ -1,4 +1,7 @@
 from bisheng.api.v1.aad_oauth import router as aad_oauth_router
+from bisheng.api.v1.wecom_oauth import router as wecom_oauth_router
+from bisheng.api.v1.scheduled_task import router as scheduled_task_router
+from bisheng.api.v1.workspace_space import router as workspace_space_router
 from bisheng.api.v1.assistant import router as assistant_router
 from bisheng.api.v1.audit import router as audit_router
 from bisheng.api.v1.chat import router as chat_router
@@ -21,6 +24,9 @@ from bisheng.user.api.user import router as user_router
 
 __all__ = [
     'aad_oauth_router',
+    'wecom_oauth_router',
+    'scheduled_task_router',
+    'workspace_space_router',
     'chat_router',
     'endpoints_router',
     'validate_router',

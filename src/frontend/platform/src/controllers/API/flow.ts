@@ -162,14 +162,17 @@ export async function readFlowsFromDatabase(page: number = 1, pageSize: number =
 }
 
 /* app list */
-export async function getAppsApi({ page = 1, pageSize = 20, keyword, tag_id = -1, type, managed }) {
+export async function getAppsApi({ page = 1, pageSize = 20, keyword, tag_id = -1, type, managed, space_id = undefined }) {
     const tagIdStr = tag_id === -1 ? '' : `&tag_id=${tag_id}`
     const map = { assistant: 5, skill: 1, flow: 10 }
     const flowType = map[type] ? `&flow_type=${map[type]}` : ''
     const managedStr = (managed !== undefined && managed !== null && managed !== '')
         ? `&managed=${managed}`
         : '';
-    const { data, total }: { data: any[], total: number } = await axios.get(`/api/v1/workflow/list?page_num=${page}&page_size=${pageSize}&name=${keyword}${tagIdStr}${flowType}${managedStr}`);
+    const spaceStr = (space_id !== undefined && space_id !== null && space_id !== '')
+        ? `&space_id=${space_id}`
+        : '';
+    const { data, total }: { data: any[], total: number } = await axios.get(`/api/v1/workflow/list?page_num=${page}&page_size=${pageSize}&name=${keyword}${tagIdStr}${flowType}${managedStr}${spaceStr}`);
     const newData = data.map(item => {
         if (item.flow_type !== 5) return item
         return {

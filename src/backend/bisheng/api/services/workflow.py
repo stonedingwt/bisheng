@@ -84,9 +84,11 @@ class WorkFlowService(BaseService):
 
     @classmethod
     def get_all_flows(cls, user: UserPayload, name: str, status: int, tag_id: Optional[int], flow_type: Optional[int],
-                      page: int = 1, page_size: int = 10, managed: bool = False) -> (list[dict], int):
+                      page: int = 1, page_size: int = 10, managed: bool = False,
+                      space_id: Optional[int] = None) -> (list[dict], int):
         """
         Get all the skills
+        非管理员用户: 只能看到自己创建的 + 被角色授权的工作流, 且只能在被授权的空间内
         """
         # SetujutagDapatkanidVertical
         flow_ids = []
@@ -97,19 +99,34 @@ class WorkFlowService(BaseService):
                 return [], 0
             flow_ids = [one.resource_id for one in ret]
 
+        # 非管理员: 验证空间权限
+        if not user.is_admin() and space_id is not None:
+            authorized_space_ids = cls._get_user_authorized_space_ids(user)
+            if space_id not in authorized_space_ids:
+                return [], 0
+
         # Get a list of skills visible to the user
         if user.is_admin():
-            data, total = FlowDao.get_all_apps(name, status, flow_ids, flow_type, None, None, None, page, page_size)
+            data, total = FlowDao.get_all_apps(name, status, flow_ids, flow_type, None, None, None, page, page_size,
+                                               space_id=space_id)
         else:
             access_list = [AccessType.FLOW, AccessType.WORKFLOW, AccessType.ASSISTANT_READ]
             if managed:
                 access_list = [AccessType.FLOW_WRITE, AccessType.WORKFLOW_WRITE, AccessType.ASSISTANT_WRITE]
             flow_id_extra = user.get_user_access_resource_ids(access_list)
             data, total = FlowDao.get_all_apps(name, status, flow_ids, flow_type, user.user_id, flow_id_extra, None,
-                                               page, page_size)
+                                               page, page_size, space_id=space_id)
         data = cls.add_extra_field(user, data, managed)
 
         return data, total
+
+    @classmethod
+    def _get_user_authorized_space_ids(cls, user: UserPayload) -> list:
+        """获取用户被授权的空间 ID 列表"""
+        from bisheng.database.models.role_access import RoleAccessDao, AccessType
+        role_access_list = RoleAccessDao.get_role_access_batch(
+            user.user_role, [AccessType.SPACE_READ])
+        return list(set([int(ra.third_id) for ra in role_access_list]))
 
     @classmethod
     def run_once(cls, login_user: UserPayload, node_input: Dict[str, any], node_data: Dict[any, any], workflow_id: str):

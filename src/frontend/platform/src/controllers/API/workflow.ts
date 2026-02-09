@@ -20,18 +20,22 @@ export const getWorkflowReportTemplate = async (key: string, flowId: string): Pr
 /**
  * 创建工作流
  */
-export const createWorkflowApi = async (name, desc, url, flow): Promise<any> => {
+export const createWorkflowApi = async (name, desc, url, flow?, spaceId?): Promise<any> => {
     if (url) {
         // logo保存相对路径
         url = url.replace('/bisheng', '')
     }
     const data = flow || {}
-    return await axios.post("/api/v1/workflow/create", {
+    const payload: any = {
         ...data,
         name,
         description: desc,
         logo: url
-    });
+    };
+    if (spaceId !== undefined && spaceId !== null) {
+        payload.space_id = spaceId;
+    }
+    return await axios.post("/api/v1/workflow/create", payload);
 }
 
 /**

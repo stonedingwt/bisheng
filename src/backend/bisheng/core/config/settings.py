@@ -64,12 +64,22 @@ class AadSsoConfig(BaseModel):
     redirect_uri: Optional[str] = Field(default=None, description='AAD 登录回调地址，如 http://your-domain/api/v1/oauth2/aad/callback')
 
 
+class WecomSsoConfig(BaseModel):
+    """ 企业微信 SSO Config """
+    enabled: bool = Field(default=False, description='是否启用企业微信扫码登录')
+    corp_id: Optional[str] = Field(default=None, description='企业微信 CorpID (企业ID)')
+    agent_id: Optional[str] = Field(default=None, description='企业微信应用 AgentId')
+    secret: Optional[str] = Field(default=None, description='企业微信应用 Secret')
+    redirect_uri: Optional[str] = Field(default=None, description='企业微信登录回调地址')
+
+
 class SystemLoginMethod(BaseModel):
     """ System Login Method Config """
     bisheng_pro: bool = Field(default=False, description='Whether it is a commercial version, Verify Configuredlicense')
     admin_username: Optional[str] = Field(default=None, description='Admin username registered via web')
     allow_multi_login: bool = Field(default=True, description='Whether to allow multi-sign-on')
     aad_sso: AadSsoConfig = Field(default_factory=AadSsoConfig, description='Azure AD SSO配置')
+    wecom_sso: WecomSsoConfig = Field(default_factory=WecomSsoConfig, description='企业微信扫码登录配置')
 
 
 class MilvusConf(BaseModel):
@@ -167,6 +177,13 @@ class CeleryConf(BaseModel):
             self.beat_schedule['telemetry_sync_mid_user_interact_dtl'] = {
                 'task': 'bisheng.worker.telemetry.mid_table.sync_mid_user_interact_dtl',
                 'schedule': crontab('*/30 0 * * *'),  # 00:30 exec every day
+            }
+
+        # 定时任务调度器: 每分钟检查一次待执行的定时任务
+        if 'check_scheduled_tasks' not in self.beat_schedule:
+            self.beat_schedule['check_scheduled_tasks'] = {
+                'task': 'bisheng.worker.scheduled.check_tasks',
+                'schedule': crontab(),  # 每分钟
             }
 
         # convert str to crontab

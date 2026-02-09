@@ -25,6 +25,7 @@ import { useTable } from "../../../util/hook";
 import { LoadingIcon } from "@/components/bs-icons/loading";
 import { locationContext } from "@/contexts/locationContext";
 import { message } from "@/components/bs-ui/toast/use-toast";
+import { getSpacesApi } from "@/controllers/API/workspace_space";
 
 interface SearchPanneProps {
   groupId: any;
@@ -41,6 +42,7 @@ interface SearchPanneProps {
   isPermissionTable?: boolean;
   role_id?: any;
   showTab?: boolean;
+  spaceList?: any[];
 }
 
 const enum MenuType {
@@ -81,6 +83,7 @@ const SearchPanne = ({
   placeholderKey,
   allowCreateBoard,
   onAllowCreateBoardChange,
+  spaceList,
 }: SearchPanneProps) => {
   const { t } = useTranslation();
   const { appConfig } = useContext(locationContext)
@@ -92,6 +95,20 @@ const SearchPanne = ({
         return Promise.resolve({
           data: MENU_LIST,
           total: MENU_LIST.length
+        });
+      }
+
+      // 空间权限: 使用传入的 spaceList 静态数据
+      if (type === 'space') {
+        const list = (spaceList || []).map(s => ({
+          id: s.id,
+          name: s.name,
+          user_name: s.description || '-',
+          color: s.color,
+        }));
+        return Promise.resolve({
+          data: list,
+          total: list.length,
         });
       }
 
@@ -122,17 +139,18 @@ const SearchPanne = ({
 
   const renderPermissionTable = () => {
     if (!isPermissionTable) return children?.(data) || null;
-    const isMenuOrBoard = type === 'menu' || type === 'board';
+    const isStaticList = type === 'menu' || type === 'board' || type === 'space';
     return (
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{t(nameKey)}</TableHead>
-            {type !== 'menu' && <TableHead>{t('system.creator')}</TableHead>}
+            {type !== 'menu' && type !== 'space' && <TableHead>{t('system.creator')}</TableHead>}
+            {type === 'space' && <TableHead>{t('space.description')}</TableHead>}
             <TableHead className="text-center w-[175px]">
-              {!isMenuOrBoard ? t('system.usePermission') : t('system.viewPermission')}
+              {!isStaticList ? t('system.usePermission') : t('system.viewPermission')}
             </TableHead>
-            {isPermissionTable && type !== 'menu' && appConfig.isPro && (
+            {isPermissionTable && type !== 'menu' && type !== 'space' && appConfig.isPro && (
               <TableHead className="text-right w-[75px]">{t('system.managePermission')}</TableHead>
             )}
           </TableRow>
@@ -140,15 +158,23 @@ const SearchPanne = ({
         <TableBody>
           {data.map((el: any) => (
             <TableRow key={el.id}>
-              <TableCell className="font-medium">{t(el.name)}</TableCell>
-              {type !== 'menu' && <TableCell>{el.user_name}</TableCell>}
+              <TableCell className="font-medium">
+                {type === 'space' ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full inline-block flex-shrink-0" style={{ backgroundColor: el.color || '#3B82F6' }} />
+                    {el.name}
+                  </span>
+                ) : t(el.name)}
+              </TableCell>
+              {type !== 'menu' && type !== 'space' && <TableCell>{el.user_name}</TableCell>}
+              {type === 'space' && <TableCell className="text-gray-400 text-sm">{el.user_name}</TableCell>}
               <TableCell className="text-center">
                 <Switch
                   checked={useChecked(el.id)}
                   onCheckedChange={(bln) => onUseChange(el.id, bln)}
                 />
               </TableCell>
-              {type !== 'menu' && appConfig.isPro && (
+              {type !== 'menu' && type !== 'space' && appConfig.isPro && (
                 <TableCell className="text-center">
                   <Switch
                     checked={manageChecked(el.id)}
@@ -184,7 +210,7 @@ const SearchPanne = ({
       )}
 
 
-      {type !== 'menu' && <SearchInput
+      {type !== 'menu' && type !== 'space' && <SearchInput
         onChange={(e) => search(e.target.value)}
         placeholder={placeholderKey ? t(placeholderKey) : ''}
         className="mt-0"
@@ -197,7 +223,7 @@ const SearchPanne = ({
         </div>
         : renderPermissionTable()}
     </div>
-    {type !== 'menu' && <AutoPagination className="m-0 mt-4 w-auto justify-end" page={page} pageSize={pageSize} total={total} onChange={setPage} />}
+    {type !== 'menu' && type !== 'space' && <AutoPagination className="m-0 mt-4 w-auto justify-end" page={page} pageSize={pageSize} total={total} onChange={setPage} />}
   </>
 };
 
@@ -205,7 +231,7 @@ const usePermissionSwitchLogic = (form, setForm) => {
   const switchDataChange = (id, key, checked) => {
     setForm(prev => {
       const array = prev[key] || [];
-      const numberFields = ['useLibs', 'manageLibs', 'useTools', 'manageTools', 'useBoards', 'manageBoards'];
+      const numberFields = ['useLibs', 'manageLibs', 'useTools', 'manageTools', 'useBoards', 'manageBoards', 'useSpaces'];
       const convertedId = numberFields.includes(key) ? Number(id) : String(id);
       const index = array.findIndex(el => el === convertedId);
 
@@ -262,7 +288,8 @@ const usePermissionSwitchLogic = (form, setForm) => {
       const numId = Number(id);
       if (!checked && (form.manageBoards || []).includes(numId)) return;
       switchDataChange(numId, 'useBoards', checked);
-    }
+    },
+    switchUseSpace: (id, checked) => switchDataChange(id, 'useSpaces', checked),
   };
 };
 
@@ -270,7 +297,8 @@ const initPermissionData = (resData) => {
   const initData = {
     useSkills: [], useLibs: [], useAssistant: [], useFlows: [], useTools: [], useMenu: [],
     manageLibs: [], manageAssistants: [], manageSkills: [], manageFlows: [], manageTools: [],
-    useBoards: [], manageBoards: []
+    useBoards: [], manageBoards: [],
+    useSpaces: [],
   };
   resData.forEach(item => {
     switch (item.type) {
@@ -290,14 +318,14 @@ const initPermissionData = (resData) => {
       case 12:
         initData.manageBoards.push(Number(item.third_id));
         break;
-
+      case 13: initData.useSpaces.push(Number(item.third_id)); break;  // SPACE_READ
       case 99: initData.useMenu.push(String(item.third_id)); break;
     }
   });
   return initData;
 };
 
-const getSearchPanneConfig = (type, form, switches, t, groupId, roleId, handleAllowCreateBoardChange) => {
+const getSearchPanneConfig = (type, form, switches, t, groupId, roleId, handleAllowCreateBoardChange, allSpaces) => {
   const placeholderMap = {
     assistant: 'system.searchAssistant',
     skill: 'system.searchSkill',
@@ -306,6 +334,7 @@ const getSearchPanneConfig = (type, form, switches, t, groupId, roleId, handleAl
     tool: 'system.searchTool',
     menu: '',
     board: 'system.searchBoard',
+    space: '',
   };
 
   const configMap = {
@@ -325,7 +354,16 @@ const getSearchPanneConfig = (type, form, switches, t, groupId, roleId, handleAl
       placeholderKey: placeholderMap.board,
       allowCreateBoard: form.allowCreateBoard,
       onAllowCreateBoardChange: handleAllowCreateBoardChange,
-    }
+    },
+    space: {
+      title: t('system.spaceAuthorization'),
+      nameKey: 'system.spaceName',
+      useChecked: (id) => (form.useSpaces || []).includes(Number(id)),
+      manageChecked: () => false,
+      onUseChange: switches.switchUseSpace,
+      onManageChange: () => { },
+      placeholderKey: placeholderMap.space,
+    },
   };
 
   const config = configMap[type];
@@ -345,25 +383,33 @@ const getSearchPanneConfig = (type, form, switches, t, groupId, roleId, handleAl
     placeholderKey: config.placeholderKey,
     allowCreateBoard: config.allowCreateBoard,
     onAllowCreateBoardChange: config.onAllowCreateBoardChange,
+    spaceList: allSpaces,
   };
 };
 
 export default function EditRole({ id, name, groupId, onChange, onBeforeChange }) {
   const { setErrorData, setSuccessData } = useContext(alertContext);
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'menu' | 'assistant' | 'skill' | 'flow' | 'knowledge' | 'tool' | 'board'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'assistant' | 'skill' | 'flow' | 'knowledge' | 'tool' | 'board' | 'space'>('menu');
 
   const [form, setForm] = useState({
     name,
     useSkills: [], useLibs: [], useAssistant: [], useFlows: [], useTools: [], useMenu: [MenuType.BUILD, MenuType.KNOWLEDGE],
     manageLibs: [], manageAssistants: [], manageSkills: [], manageFlows: [], manageTools: [], useBoards: [], manageBoards: [],
     allowCreateBoard: false,
+    useSpaces: [],
   });
 
   const [spacePermissions, setSpacePermissions] = useState({
     workspace: true,
     admin: true,
   });
+
+  // 加载所有空间列表 (管理员 API 返回所有空间)
+  const [allSpaces, setAllSpaces] = useState<any[]>([]);
+  useEffect(() => {
+    getSpacesApi().then(res => setAllSpaces(res || [])).catch(() => {});
+  }, []);
 
   const handleAllowCreateBoardChange = (checked: boolean) => {
     setForm(prev => {
@@ -429,11 +475,14 @@ export default function EditRole({ id, name, groupId, onChange, onBeforeChange }
       }
     }
 
+    // 空间权限 Tab 始终显示 (和菜单权限、助手权限同级)
+    tabs.push('space');
+
     return tabs;
   }, [spacePermissions.admin, form.allowCreateBoard, form.useMenu]);
 
   const renderPermissionPanne = (type) => {
-    const config = getSearchPanneConfig(type, form, switches, t, groupId, roleId, handleAllowCreateBoardChange);
+    const config = getSearchPanneConfig(type, form, switches, t, groupId, roleId, handleAllowCreateBoardChange, allSpaces);
     return <SearchPanne key={type} {...config} />;
   };
   const syncSpaceToMenu = (next: { workspace: boolean; admin: boolean }) => {
@@ -525,7 +574,8 @@ export default function EditRole({ id, name, groupId, onChange, onBeforeChange }
       updateRolePermissionsApi({ role_id: roleIdLocal, access_id: sanitizeIds(menuPermissionsToSave) as any, type: 99 as any }),
       updateRolePermissionsApi({ role_id: roleIdLocal, access_id: sanitizeIds(form.useBoards) as any, type: 11 as any }),
       updateRolePermissionsApi({ role_id: roleIdLocal, access_id: sanitizeIds(form.manageBoards) as any, type: 12 as any }),
-
+      // 保存空间权限 (SPACE_READ = 13)
+      updateRolePermissionsApi({ role_id: roleIdLocal, access_id: sanitizeIds(form.useSpaces) as any, type: 13 as any }),
     ]);
     message({
       variant: 'success',

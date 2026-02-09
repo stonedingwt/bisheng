@@ -7,6 +7,8 @@ import {
     TabsList,
     TabsTrigger,
 } from "../../components/bs-ui/tabs";
+import AadSsoConfig from "./components/AadSsoConfig";
+import WecomSsoConfig from "./components/WecomSsoConfig";
 import Config from "./components/Config";
 import Roles from "./components/Roles";
 import Theme from "./theme";
@@ -25,6 +27,8 @@ export default function index() {
                 {user.role === 'admin' && <TabsTrigger value="userGroup">{t('system.userGroupsM')}</TabsTrigger>}
                 <TabsTrigger value="role">{t('system.roleManagement')}</TabsTrigger>
                 {user.role === 'admin' && <TabsTrigger value="system">{t('system.systemConfiguration')}</TabsTrigger>}
+                {user.role === 'admin' && <TabsTrigger value="aadSso">{t('system.aadSsoTab')}</TabsTrigger>}
+                {user.role === 'admin' && <TabsTrigger value="wecomSso">{t('system.wecomSsoTab')}</TabsTrigger>}
                 {user.role === 'admin' && <TabsTrigger value="theme">{t('system.themeColor')}</TabsTrigger>}
             </TabsList>
             <TabsContent value="user">
@@ -38,6 +42,12 @@ export default function index() {
             </TabsContent>
             <TabsContent value="system">
                 <Config></Config>
+            </TabsContent>
+            <TabsContent value="aadSso">
+                <AadSsoConfig></AadSsoConfig>
+            </TabsContent>
+            <TabsContent value="wecomSso">
+                <WecomSsoConfig></WecomSsoConfig>
             </TabsContent>
             <TabsContent value="theme">
                 <Theme></Theme>

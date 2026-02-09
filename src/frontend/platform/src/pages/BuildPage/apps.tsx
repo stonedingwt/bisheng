@@ -17,6 +17,7 @@ import { readTempsDatabase } from "@/controllers/API";
 import { changeAssistantStatusApi, deleteAssistantApi } from "@/controllers/API/assistant";
 import { deleteFlowFromDatabase, getAppsApi, saveFlowToDatabase, updataOnlineState } from "@/controllers/API/flow";
 import { onlineWorkflow } from "@/controllers/API/workflow";
+import { getSpacesApi, moveFlowToSpaceApi } from "@/controllers/API/workspace_space";
 import { captureAndAlertRequestErrorHoc } from "@/controllers/request";
 import { AppNumType, AppType } from "@/types/app";
 import { FlowType } from "@/types/flow";
@@ -29,6 +30,8 @@ import CreateApp from "./CreateApp";
 import { useCreateTemp, useErrorPrompt, useQueryLabels } from "./hook";
 import CardSelectVersion from "./skills/CardSelectVersion";
 import CreateTemp from "./skills/CreateTemp";
+import SpaceManager from "./SpaceManager";
+import { Settings } from "lucide-react";
 
 export const SelectType = ({ all = false, defaultValue = 'all', onChange }) => {
     const [value, setValue] = useState<string>(defaultValue)
@@ -75,9 +78,44 @@ export default function apps() {
     const { message } = useToast()
     const navigate = useNavigate()
 
-    const { page, pageSize, data: dataSource, total, loading, setPage, search, reload, refreshData, filterData } = useTable<FlowType>({ pageSize: 14, managed: true }, (param) =>
+    // Space 相关状态
+    const [spaces, setSpaces] = useState<any[]>([]);
+    const [activeSpaceId, setActiveSpaceId] = useState<number | null>(null);
+    const [spaceManagerOpen, setSpaceManagerOpen] = useState(false);
+    const [spacesLoaded, setSpacesLoaded] = useState(false);
+
+    // 延迟初始化表格: 等 space 加载完成后再发起第一次请求
+    const { page, pageSize, data: dataSource, total, loading, setPage, search, reload, refreshData, filterData } = useTable<FlowType>({ pageSize: 14, managed: true, unInitData: true }, (param) =>
         getAppsApi(param)
     )
+
+    const loadSpaces = (isRefresh = false) => {
+        getSpacesApi().then(res => {
+            const spaceList = res || [];
+            setSpaces(spaceList);
+            if (spaceList.length > 0 && !isRefresh) {
+                // 首次加载: 默认选中第一个空间并触发数据请求
+                setActiveSpaceId(spaceList[0].id);
+                filterData({ space_id: spaceList[0].id });
+            }
+            setSpacesLoaded(true);
+        }).catch(() => { setSpacesLoaded(true); });
+    };
+
+    useEffect(() => {
+        loadSpaces();
+    }, []);
+
+    const handleSpaceChange = (spaceId: number) => {
+        setActiveSpaceId(spaceId);
+        filterData({ space_id: spaceId });
+    };
+
+    const handleMoveToSpace = (item: any, targetSpaceId: number) => {
+        moveFlowToSpaceApi(item.id, targetSpaceId).then(() => {
+            reload();
+        });
+    };
 
     const { open: tempOpen, tempType, flowRef, toggleTempModal } = useCreateTemp()
 
@@ -154,7 +192,7 @@ export default function apps() {
 
             flow.name = `${flow.name}-${generateUUID(5)}`
             // @ts-ignore
-            captureAndAlertRequestErrorHoc(saveFlowToDatabase({ ...flow, id: flow.flow_id }).then((res: any) => {
+            captureAndAlertRequestErrorHoc(saveFlowToDatabase({ ...flow, id: flow.flow_id, space_id: activeSpaceId }).then((res: any) => {
                 res.user_name = user.user_name
                 res.write = true
                 // setOpen(false)
@@ -164,11 +202,7 @@ export default function apps() {
             createAppModalRef.current.open(
                 type,
                 tempId,
-                // {
-                //     id: item?.id,
-                //     logo: item?.logo,
-                //     type: TypeNames[item.flow_type]
-                // }
+                activeSpaceId
             );
         }
     }
@@ -182,6 +216,29 @@ export default function apps() {
     const tempTypeRef = useRef(null)
     return <div className="h-full relative">
         <div className="px-10 py-10 h-full overflow-y-scroll scrollbar-hide relative bg-background-main border-t">
+            {/* Space 选择栏 - 无 "全部" 选项 */}
+            {spaces.length > 0 && (
+                <div className="flex items-center gap-1 mb-4 pb-3 border-b overflow-x-auto">
+                    {spaces.map(space => (
+                        <button
+                            key={space.id}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors inline-flex items-center gap-1.5 ${activeSpaceId === space.id ? 'text-white' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                            style={activeSpaceId === space.id ? { backgroundColor: space.color || '#3B82F6' } : {}}
+                            onClick={() => handleSpaceChange(space.id)}
+                        >
+                            <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ backgroundColor: space.color || '#3B82F6' }} />
+                            {space.name}
+                        </button>
+                    ))}
+                    {user.role === 'admin' && (
+                        <Button variant="ghost" size="icon" className="ml-1 flex-shrink-0 h-8 w-8"
+                            title={t('space.manageSpaces')}
+                            onClick={() => setSpaceManagerOpen(true)}>
+                            <Settings className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
+            )}
             <div className="flex gap-4">
                 <SearchInput className="w-64" placeholder={t('build.searchApp')} onChange={(e) => search(e.target.value)}></SearchInput>
                 <SelectType all onChange={(v) => {
@@ -238,12 +295,6 @@ export default function apps() {
                                     user={item.user_name}
                                     currentUser={user}
                                     onClick={() => handleSetting(item)}
-                                    // onSwitchClick={() => {
-                                    //     !item.write && item.status !== 2 && message({
-                                    //         description: t('build.noPermissionToPublish', { type: typeCnNames[item.flow_type] }),
-                                    //         variant: 'warning'
-                                    //     })
-                                    // }}
                                     onAddTemp={toggleTempModal}
                                     onCheckedChange={handleCheckedChange}
                                     onDelete={handleDelete}
@@ -264,9 +315,40 @@ export default function apps() {
                                         </LabelShow>
                                     }
                                     footer={
-                                        <Badge className={`absolute py-0 px-1 right-0 bottom-0 rounded-none rounded-br-md  ${item.flow_type === AppNumType.SKILL && 'bg-gray-950'} ${item.flow_type === AppNumType.ASSISTANT && 'bg-[#fdb136]'}`}>
-                                            {typeCnNames[item.flow_type]}
-                                        </Badge>
+                                        <div className="absolute right-0 bottom-0 flex items-center gap-0.5">
+                                            {spaces.length > 1 && user.role === 'admin' && (
+                                                <Select value={item.space_id ? String(item.space_id) : 'none'} onValueChange={(v) => {
+                                                    handleMoveToSpace(item, Number(v));
+                                                }}>
+                                                    <SelectTrigger className="h-5 w-auto min-w-[60px] text-[10px] border-0 bg-transparent px-1 py-0 gap-0.5 rounded-none focus:ring-0" onClick={(e) => e.stopPropagation()}>
+                                                        {(() => {
+                                                            const sp = spaces.find(s => s.id === item.space_id);
+                                                            return sp ? (
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sp.color }} />
+                                                                    {sp.name}
+                                                                </span>
+                                                            ) : <span className="text-gray-400">-</span>;
+                                                        })()}
+                                                    </SelectTrigger>
+                                                    <SelectContent onClick={(e) => e.stopPropagation()}>
+                                                        <SelectGroup>
+                                                            {spaces.map(sp => (
+                                                                <SelectItem key={sp.id} value={String(sp.id)}>
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: sp.color }} />
+                                                                        {sp.name}
+                                                                    </span>
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectGroup>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                            <Badge className={`py-0 px-1 rounded-none rounded-br-md ${item.flow_type === AppNumType.SKILL && 'bg-gray-950'} ${item.flow_type === AppNumType.ASSISTANT && 'bg-[#fdb136]'}`}>
+                                                {typeCnNames[item.flow_type]}
+                                            </Badge>
+                                        </div>
                                     }
                                 ></CardComponent>
                             ))
@@ -282,6 +364,12 @@ export default function apps() {
             <AutoPagination className="m-0 w-auto justify-end" page={page} pageSize={pageSize} total={total} onChange={setPage}></AutoPagination>
         </div>
         {/* create flow&assistant */}
-        <CreateApp ref={createAppModalRef} />
+        <CreateApp ref={createAppModalRef} activeSpaceId={activeSpaceId} />
+        {/* space manager */}
+        <SpaceManager
+            open={spaceManagerOpen}
+            onClose={() => setSpaceManagerOpen(false)}
+            onChanged={() => { loadSpaces(true); reload(); }}
+        />
     </div>
 };

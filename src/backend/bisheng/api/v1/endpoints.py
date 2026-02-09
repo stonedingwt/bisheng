@@ -96,8 +96,14 @@ def get_env():
     env['enable_etl4lm'] = bool(etl_for_lm_url)
 
     # AAD SSO 状态
-    aad_sso = bisheng_settings.get_system_login_method().aad_sso
+    login_method = bisheng_settings.get_system_login_method()
+    aad_sso = login_method.aad_sso
     env['aad_sso_enabled'] = (aad_sso.enabled and bool(aad_sso.client_id) and bool(aad_sso.tenant_id))
+
+    # 企业微信 SSO 状态
+    wecom_sso = login_method.wecom_sso
+    env['wecom_sso_enabled'] = (wecom_sso.enabled and bool(wecom_sso.corp_id)
+                                 and bool(wecom_sso.agent_id) and bool(wecom_sso.secret))
 
     return resp_200(env)
 
