@@ -258,8 +258,6 @@ sftp-config.json
 sftp-config.json
 
 # Docker local files
-docker/data/*
-docker/mysql/data/*
 docker/office/bisheng/*.gz
 
 CLAUDE.md
