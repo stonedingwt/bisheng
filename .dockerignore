@@ -1,0 +1,9 @@
+.git
+src/frontend/platform/node_modules
+src/frontend/platform/build
+docker/data
+docker/mysql/data
+**/__pycache__
+**/*.pyc
+.venv
+*.egg-info

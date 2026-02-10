@@ -1,0 +1,23 @@
+# Stage 1: 构建前端
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# 复制本地依赖包和 package.json
+COPY src/frontend/platform/local-packages/ ./local-packages/
+COPY src/frontend/platform/package.json src/frontend/platform/package-lock.json* ./
+RUN npm install --force --legacy-peer-deps
+
+COPY src/frontend/platform/ ./
+RUN npm run build
+
+# Stage 2: 基于官方前端镜像，覆盖构建产物
+FROM dataelement/bisheng-frontend:v2.3.0
+
+# 覆盖前端 build 产物
+COPY --from=builder /app/build/ /usr/share/nginx/html/platform/
+
+# 覆盖 i18n 翻译文件 (确保最新版本)
+COPY src/frontend/platform/public/locales/zh-Hans/bs.json /usr/share/nginx/html/platform/locales/zh-Hans/bs.json
+COPY src/frontend/platform/public/locales/en-US/bs.json /usr/share/nginx/html/platform/locales/en-US/bs.json
+COPY src/frontend/platform/public/locales/ja/bs.json /usr/share/nginx/html/platform/locales/ja/bs.json

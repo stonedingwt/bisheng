@@ -1,0 +1,47 @@
+# 基于官方 bisheng-backend 镜像，叠加所有自定义修改
+FROM dataelement/bisheng-backend:v2.3.0
+
+# 安装额外依赖
+RUN pip install croniter -q --no-cache-dir
+
+# ========== 覆盖/新增后端文件 ==========
+
+# API 路由和初始化
+COPY src/backend/bisheng/api/router.py /app/bisheng/api/router.py
+COPY src/backend/bisheng/api/v1/__init__.py /app/bisheng/api/v1/__init__.py
+
+# 新增 API 端点
+COPY src/backend/bisheng/api/v1/aad_oauth.py /app/bisheng/api/v1/aad_oauth.py
+COPY src/backend/bisheng/api/v1/wecom_oauth.py /app/bisheng/api/v1/wecom_oauth.py
+COPY src/backend/bisheng/api/v1/scheduled_task.py /app/bisheng/api/v1/scheduled_task.py
+COPY src/backend/bisheng/api/v1/workspace_space.py /app/bisheng/api/v1/workspace_space.py
+COPY src/backend/bisheng/api/v1/token_stats.py /app/bisheng/api/v1/token_stats.py
+
+# 修改过的 API 端点
+COPY src/backend/bisheng/api/v1/endpoints.py /app/bisheng/api/v1/endpoints.py
+COPY src/backend/bisheng/api/v1/workflow.py /app/bisheng/api/v1/workflow.py
+
+# API 服务层
+COPY src/backend/bisheng/api/services/workflow.py /app/bisheng/api/services/workflow.py
+
+# 数据库模型
+COPY src/backend/bisheng/database/models/flow.py /app/bisheng/database/models/flow.py
+COPY src/backend/bisheng/database/models/role.py /app/bisheng/database/models/role.py
+COPY src/backend/bisheng/database/models/role_access.py /app/bisheng/database/models/role_access.py
+COPY src/backend/bisheng/database/models/scheduled_task.py /app/bisheng/database/models/scheduled_task.py
+COPY src/backend/bisheng/database/models/workspace_space.py /app/bisheng/database/models/workspace_space.py
+
+# 配置
+COPY src/backend/bisheng/core/config/settings.py /app/bisheng/core/config/settings.py
+COPY src/backend/bisheng/initdb_config.yaml /app/bisheng/initdb_config.yaml
+
+# Worker
+COPY src/backend/bisheng/worker/__init__.py /app/bisheng/worker/__init__.py
+COPY src/backend/bisheng/worker/scheduled/ /app/bisheng/worker/scheduled/
+
+# 工作流模板
+COPY src/backend/bisheng/workflow/templates/ /app/bisheng/workflow/templates/
+
+# 自定义 entrypoint (workers 从 8 降为 2 防止 OOM)
+COPY docker/bisheng/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
