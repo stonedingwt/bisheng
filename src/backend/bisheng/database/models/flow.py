@@ -34,12 +34,14 @@ class FlowType(Enum):
     WORKFLOW = 10
     WORKSTATION = 15
     LINSIGHT = 20  # Inspiration Mode
+    LANGGRAPH = 25  # LangGraph Workflow
 
 
 class AppEnum(Enum):
     Flow = 'flow'
     ASSISTANT = 'assistant'
     WORKFLOW = 'workflow'
+    LANGGRAPH = 'langgraph'
 
 
 class UserLinkType(Enum):

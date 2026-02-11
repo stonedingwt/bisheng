@@ -23,6 +23,8 @@ from bisheng.api.v1.workstation import router as workstation_router
 from bisheng.tool.api.tool import router as tool_router
 from bisheng.user.api.user import router as user_router
 
+from bisheng.langgraph.api import langgraph_router
+
 __all__ = [
     'aad_oauth_router',
     'wecom_oauth_router',
@@ -48,4 +50,5 @@ __all__ = [
     "tool_router",
     "invite_code_router",
     "token_stats_router",
+    "langgraph_router",
 ]

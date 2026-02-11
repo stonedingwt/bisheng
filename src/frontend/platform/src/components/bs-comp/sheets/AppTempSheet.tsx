@@ -1,6 +1,8 @@
 import { AbilitiesIcon, FlowIcon, HelperIcon } from "@/components/bs-icons/app";
 import { readTempsDatabase } from "@/controllers/API";
+import { getLangGraphTemplates } from "@/controllers/API/langgraph";
 import { AppType, AppTypeToNum } from "@/types/app";
+import { GitFork } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchInput } from "../../bs-ui/input";
@@ -12,7 +14,8 @@ import AppAvator from "../cardComponent/avatar";
 export default function AppTempSheet({ children, onCustomCreate, onSelect }) {
     const [open, setOpen] = useState(false)
     const [type, setType] = useState<AppType>(AppType.FLOW)
-    const { t } = useTranslation('flow')
+    const { t, i18n } = useTranslation('flow')
+    const isZh = i18n.language?.startsWith('zh')
     const createDesc = useMemo(() => {
         const descs = {
             [AppType.ASSISTANT]: {
@@ -29,21 +32,43 @@ export default function AppTempSheet({ children, onCustomCreate, onSelect }) {
             [AppType.SKILL]: {
                 title: t('customSkill'),
                 desc: t('richComponentsForBuildingApps')
+            },
+            [AppType.LANGGRAPH]: {
+                title: isZh ? '自定义 LangGraph 工作流' : 'Custom LangGraph Workflow',
+                desc: isZh ? '支持循环、子图、多Agent协作、人机协作等高级模式' : 'Support cycles, subgraphs, multi-agent collaboration, human-in-the-loop'
             }
         }
         return descs[type]
-    }, [type, t])
+    }, [type, t, isZh])
 
     const [keyword, setKeyword] = useState(' ')
     const allDataRef = useRef([])
 
     useEffect(() => {
         setKeyword(' ')
-        readTempsDatabase(type).then(res => {
-            allDataRef.current = res
-            setKeyword('')
-        })
-    }, [type])
+        if (type === AppType.LANGGRAPH) {
+            // Load LangGraph templates from API
+            getLangGraphTemplates().then(res => {
+                const templates = (res || []).map(tpl => ({
+                    id: tpl.id,
+                    name: isZh ? tpl.name_zh : tpl.name,
+                    description: isZh ? tpl.description_zh : tpl.description,
+                    logo: '',
+                    _isLgTemplate: true,
+                }))
+                allDataRef.current = templates
+                setKeyword('')
+            }).catch(() => {
+                allDataRef.current = []
+                setKeyword('')
+            })
+        } else {
+            readTempsDatabase(type).then(res => {
+                allDataRef.current = res
+                setKeyword('')
+            })
+        }
+    }, [type, isZh])
 
     const options = useMemo(() => {
         return allDataRef.current.filter(el => el.name.toLowerCase().includes(keyword.toLowerCase()))
@@ -82,6 +107,13 @@ export default function AppTempSheet({ children, onCustomCreate, onSelect }) {
                             <AbilitiesIcon />
                             <span>{t('skill')}</span>
                         </div>
+                        <div
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer hover:bg-muted-foreground/10 transition-all duration-200 mb-2 ${type === AppType.LANGGRAPH && 'bg-muted-foreground/10'}`}
+                            onClick={() => setType(AppType.LANGGRAPH)}
+                        >
+                            <GitFork className="w-5 h-5 text-purple-500" />
+                            <span>{isZh ? 'LangGraph 工作流' : 'LangGraph Workflow'}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex-1 min-w-[696px] bg-[#fff] dark:bg-[#030712] p-5 pt-12 h-full flex flex-wrap gap-1.5 overflow-y-auto scrollbar-hide content-start">
@@ -92,7 +124,6 @@ export default function AppTempSheet({ children, onCustomCreate, onSelect }) {
                         title={createDesc.title}
                         description={createDesc.desc}
                         onClick={() => { onCustomCreate(type); setOpen(false) }}
-                    // onClick={() => navigate('/build/skill')}
                     ></CardComponent>
                     {
                         options.map((flow, i) => (
@@ -104,7 +135,15 @@ export default function AppTempSheet({ children, onCustomCreate, onSelect }) {
                                 description={flow.description}
                                 type="sheet"
                                 footer={null}
-                                onClick={() => { onSelect(type, flow.id); setOpen(false) }}
+                                onClick={() => {
+                                    if (flow._isLgTemplate) {
+                                        // LangGraph template: use template ID
+                                        onSelect(AppType.LANGGRAPH, flow.id, flow)
+                                    } else {
+                                        onSelect(type, flow.id)
+                                    }
+                                    setOpen(false)
+                                }}
                             />
                         ))
                     }

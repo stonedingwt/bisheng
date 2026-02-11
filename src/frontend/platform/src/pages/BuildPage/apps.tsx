@@ -41,6 +41,7 @@ export const SelectType = ({ all = false, defaultValue = 'all', onChange }) => {
         { label: t('build.workflow'), value: AppType.FLOW },
         { label: t('build.assistant'), value: AppType.ASSISTANT },
         { label: t('build.skill'), value: AppType.SKILL },
+        { label: t('build.langgraph'), value: AppType.LANGGRAPH },
     ];
 
     if (all) {
@@ -65,7 +66,8 @@ export const SelectType = ({ all = false, defaultValue = 'all', onChange }) => {
 const TypeNames = {
     5: AppType.ASSISTANT,
     1: AppType.SKILL,
-    10: AppType.FLOW
+    10: AppType.FLOW,
+    25: AppType.LANGGRAPH
 }
 export default function apps() {
     const { t, i18n } = useTranslation()
@@ -135,7 +137,7 @@ export default function apps() {
                 }
                 return res
             })
-        } else if (data.flow_type === 10) {
+        } else if (data.flow_type === 10 || data.flow_type === 25) {
             return captureAndAlertRequestErrorHoc(onlineWorkflow(data, checked ? 2 : 1)).then(res => {
                 if (res) {
                     refreshData((item) => item.id === data.id, { status: checked ? 2 : 1 })
@@ -148,14 +150,16 @@ export default function apps() {
     const typeCnNames = {
         1: t('build.skill'),
         5: t('build.assistant'),
-        10: t('build.workflow')
+        10: t('build.workflow'),
+        25: t('build.langgraph')
     }
 
     const handleDelete = (data) => {
         const descMap = {
             1: t('build.confirmDeleteSkill'),
             10: t('build.confirmDeleteFlow'),
-            5: t('build.confirmDeleteAssistant')
+            5: t('build.confirmDeleteAssistant'),
+            25: t('build.confirmDeleteFlow')
         }
         bsConfirm({
             desc: descMap[data.flow_type],
@@ -178,6 +182,8 @@ export default function apps() {
         } else if (data.flow_type === 1) {
             const vid = data.version_list.find(item => item.is_current === 1)?.id
             navigate(`/build/skill/${data.id}/${vid}`, { state: { flow: data } })
+        } else if (data.flow_type === 25) {
+            navigate(`/langgraph/${data.id}`, { state: { flow: data } })
         } else {
             navigate(`/flow/${data.id}`, { state: { flow: data } })
         }
@@ -185,6 +191,21 @@ export default function apps() {
 
     const createAppModalRef = useRef(null)
     const handleCreateApp = async (type, tempId = 0, item?: any) => {
+        if (type === AppType.LANGGRAPH) {
+            if (tempId && typeof tempId === 'string' && item?._isLgTemplate) {
+                // Create from LangGraph preset template
+                const { createFromTemplate } = await import('@/controllers/API/langgraph');
+                const res = await captureAndAlertRequestErrorHoc(createFromTemplate(tempId, '', activeSpaceId || undefined));
+                // axios interceptor auto-unwraps: res is {id, name} directly
+                if (res?.id) {
+                    navigate('/langgraph/' + res.id);
+                }
+            } else {
+                // Blank LangGraph workflow: open CreateApp modal
+                createAppModalRef.current.open(type, 0, activeSpaceId);
+            }
+            return;
+        }
         if (type === AppType.SKILL) {
             if (!tempId) return navigate('/build/skill')
             // select template
@@ -345,7 +366,7 @@ export default function apps() {
                                                     </SelectContent>
                                                 </Select>
                                             )}
-                                            <Badge className={`py-0 px-1 rounded-none rounded-br-md ${item.flow_type === AppNumType.SKILL && 'bg-gray-950'} ${item.flow_type === AppNumType.ASSISTANT && 'bg-[#fdb136]'}`}>
+                                            <Badge className={`py-0 px-1 rounded-none rounded-br-md ${item.flow_type === AppNumType.SKILL && 'bg-gray-950'} ${item.flow_type === AppNumType.ASSISTANT && 'bg-[#fdb136]'} ${item.flow_type === AppNumType.LANGGRAPH && 'bg-purple-600'}`}>
                                                 {typeCnNames[item.flow_type]}
                                             </Badge>
                                         </div>

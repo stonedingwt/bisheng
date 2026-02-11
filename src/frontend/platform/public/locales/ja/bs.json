@@ -908,6 +908,7 @@
     "assistant": "アシスタント",
     "workflow": "ワークフロー",
     "skill": "スキル",
+    "langgraph": "LangGraph ワークフロー",
     "tools": "ツール",
     "workbench": "ワークスペース",
     "save": "保存",

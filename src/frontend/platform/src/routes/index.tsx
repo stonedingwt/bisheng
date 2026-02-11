@@ -46,6 +46,7 @@ const ScheduledTaskPage = lazy(() => import("@/pages/ScheduledTaskPage"));
 const ResoucePage = lazy(() => import("@/pages/resoucePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TokenStatsPage = lazy(() => import("@/pages/TokenStatsPage"));
+const LangGraphPage = lazy(() => import("@/pages/LangGraphPage"));
 
 const baseConfig = {
   //@ts-ignore
@@ -123,6 +124,13 @@ const privateRouter = [
     errorElement: <RouteErrorBoundary />,
     children: [
       { path: "", element: <EditAssistantPage /> }
+    ]
+  },
+  {
+    path: "/langgraph/:id",
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      { path: "", element: <LangGraphPage /> }
     ]
   },
   {

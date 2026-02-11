@@ -196,6 +196,16 @@ ${t('build.exampleTwo', { ns: 'bs' })}
                         window.assistantCreate = true // Mark the created assistant 
                         navigate('/assistant/' + res.id)
                     }
+                } else if (appType === AppType.LANGGRAPH) {
+                    // Create LangGraph workflow via dedicated API
+                    const { createLangGraphWorkflow } = await import('@/controllers/API/langgraph');
+                    const res = await captureAndAlertRequestErrorHoc(createLangGraphWorkflow({
+                        name: formData.name,
+                        description: formData.desc,
+                        space_id: spaceId || undefined,
+                    }));
+                    // axios interceptor auto-unwraps: res is {id, name} directly
+                    if (res?.id) navigate('/langgraph/' + res.id);
                 } else {
                     if (appId) return navigate('/flow/' + appId);
                     const workflow = await captureAndAlertRequestErrorHoc(createWorkflowApi(formData.name, formData.desc, formData.url, undefined, spaceId));

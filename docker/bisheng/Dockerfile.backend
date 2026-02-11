@@ -42,6 +42,9 @@ COPY src/backend/bisheng/worker/scheduled/ /app/bisheng/worker/scheduled/
 # 工作流模板
 COPY src/backend/bisheng/workflow/templates/ /app/bisheng/workflow/templates/
 
+# LangGraph 集成包
+COPY src/backend/bisheng/langgraph/ /app/bisheng/langgraph/
+
 # 自定义 entrypoint (workers 从 8 降为 2 防止 OOM)
 COPY docker/bisheng/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh

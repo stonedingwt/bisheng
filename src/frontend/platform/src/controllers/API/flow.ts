@@ -164,7 +164,7 @@ export async function readFlowsFromDatabase(page: number = 1, pageSize: number =
 /* app list */
 export async function getAppsApi({ page = 1, pageSize = 20, keyword, tag_id = -1, type, managed, space_id = undefined }) {
     const tagIdStr = tag_id === -1 ? '' : `&tag_id=${tag_id}`
-    const map = { assistant: 5, skill: 1, flow: 10 }
+    const map = { assistant: 5, skill: 1, flow: 10, langgraph: 25 }
     const flowType = map[type] ? `&flow_type=${map[type]}` : ''
     const managedStr = (managed !== undefined && managed !== null && managed !== '')
         ? `&managed=${managed}`

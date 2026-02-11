@@ -2,7 +2,8 @@
 from fastapi import APIRouter
 
 from bisheng.api.v1 import (aad_oauth_router, wecom_oauth_router, scheduled_task_router,
-                            workspace_space_router, token_stats_router, assistant_router, audit_router,
+                            workspace_space_router, token_stats_router, langgraph_router,
+                            assistant_router, audit_router,
                             chat_router,
                             component_router,
                             endpoints_router, evaluation_router, flows_router,
@@ -57,6 +58,7 @@ router.include_router(session_router)
 router.include_router(share_link_router)
 router.include_router(telemetry_search_router)
 router.include_router(token_stats_router)
+router.include_router(langgraph_router)
 
 router_rpc = APIRouter(prefix='/api/v2', )
 router_rpc.include_router(knowledge_router_rpc)
