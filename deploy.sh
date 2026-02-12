@@ -7,7 +7,7 @@
 #   sudo ./deploy.sh
 #
 # 功能:
-#   1. 安装 Docker 和 Docker Compose (如果未安装)
+#   1. 安装 Docker 和 docker-compose (如果未安装)
 #   2. 构建自定义后端和前端 Docker 镜像
 #   3. 启动所有服务
 #   4. 等待服务就绪并输出访问信息
@@ -102,7 +102,7 @@ install_docker() {
 
         # 安装 Docker
         apt-get update -y
-        apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
         # 启动 Docker
         systemctl start docker
@@ -110,13 +110,38 @@ install_docker() {
 
         log_info "Docker 安装完成: $(docker --version)"
     fi
+}
 
-    # 检查 Docker Compose
-    if docker compose version &>/dev/null; then
-        log_info "Docker Compose: $(docker compose version)"
+# ======================= 安装 docker-compose =======================
+install_docker_compose() {
+    log_step "安装 docker-compose"
+
+    if command -v docker-compose &>/dev/null; then
+        DC_VERSION=$(docker-compose --version)
+        log_info "docker-compose 已安装: $DC_VERSION"
     else
-        log_error "Docker Compose 插件未安装，请手动安装"
-        exit 1
+        log_info "正在安装 docker-compose..."
+
+        # 检测架构
+        ARCH=$(uname -m)
+        case "$ARCH" in
+            x86_64)  DC_ARCH="x86_64" ;;
+            aarch64) DC_ARCH="aarch64" ;;
+            armv7l)  DC_ARCH="armv7" ;;
+            *)       DC_ARCH="x86_64" ;;
+        esac
+
+        # 下载 docker-compose v2.24.5 (稳定版本，兼容 v1 命令格式)
+        DC_URL="https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-${DC_ARCH}"
+        log_info "下载地址: $DC_URL"
+
+        curl -SL "$DC_URL" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+
+        # 创建软链接确保可被找到
+        ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose 2>/dev/null || true
+
+        log_info "docker-compose 安装完成: $(docker-compose --version)"
     fi
 }
 
@@ -145,11 +170,11 @@ build_images() {
     cd "$DOCKER_DIR"
 
     log_info "构建后端镜像..."
-    docker compose build backend 2>&1 | tail -5
+    docker-compose build backend 2>&1 | tail -5
     log_info "后端镜像构建完成"
 
     log_info "构建前端镜像..."
-    docker compose build frontend 2>&1 | tail -5
+    docker-compose build frontend 2>&1 | tail -5
     log_info "前端镜像构建完成"
 }
 
@@ -161,12 +186,12 @@ start_services() {
 
     # 先启动基础设施服务
     log_info "启动基础设施 (MySQL, Redis, Elasticsearch, Milvus)..."
-    docker compose up -d mysql redis elasticsearch etcd minio milvus
+    docker-compose up -d mysql redis elasticsearch etcd minio milvus
 
     # 等待 MySQL 健康
     log_info "等待 MySQL 就绪..."
     for i in $(seq 1 60); do
-        if docker compose exec -T mysql mysqladmin ping -u root -p1234 --silent 2>/dev/null; then
+        if docker-compose exec -T mysql mysqladmin ping -u root -p1234 --silent 2>/dev/null; then
             log_info "MySQL 已就绪"
             break
         fi
@@ -179,7 +204,7 @@ start_services() {
     # 等待 Redis 健康
     log_info "等待 Redis 就绪..."
     for i in $(seq 1 30); do
-        if docker compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+        if docker-compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
             log_info "Redis 已就绪"
             break
         fi
@@ -188,7 +213,7 @@ start_services() {
 
     # 启动后端
     log_info "启动后端服务..."
-    docker compose up -d backend backend_worker
+    docker-compose up -d backend backend_worker
 
     # 等待后端健康
     log_info "等待后端服务就绪 (可能需要 1-2 分钟)..."
@@ -205,7 +230,7 @@ start_services() {
 
     # 启动前端
     log_info "启动前端服务..."
-    docker compose up -d frontend
+    docker-compose up -d frontend
 
     sleep 5
     log_info "所有服务已启动"
@@ -216,7 +241,7 @@ check_status() {
     log_step "服务状态"
 
     cd "$DOCKER_DIR"
-    docker compose ps
+    docker-compose ps
 
     echo ""
 }
@@ -243,10 +268,10 @@ print_info() {
     echo -e "${GREEN}║                                                      ║${NC}"
     echo -e "${GREEN}╠══════════════════════════════════════════════════════╣${NC}"
     echo -e "${GREEN}║  常用命令:                                           ║${NC}"
-    echo -e "${GREEN}║    查看状态: cd docker && docker compose ps          ║${NC}"
-    echo -e "${GREEN}║    查看日志: cd docker && docker compose logs -f     ║${NC}"
-    echo -e "${GREEN}║    重启服务: cd docker && docker compose restart     ║${NC}"
-    echo -e "${GREEN}║    停止服务: cd docker && docker compose down        ║${NC}"
+    echo -e "${GREEN}║    查看状态: cd docker && docker-compose ps          ║${NC}"
+    echo -e "${GREEN}║    查看日志: cd docker && docker-compose logs -f     ║${NC}"
+    echo -e "${GREEN}║    重启服务: cd docker && docker-compose restart     ║${NC}"
+    echo -e "${GREEN}║    停止服务: cd docker && docker-compose down        ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -267,6 +292,7 @@ main() {
     check_root
     check_system
     install_docker
+    install_docker_compose
     setup_project
     build_images
     start_services
