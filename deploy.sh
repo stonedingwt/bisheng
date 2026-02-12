@@ -188,30 +188,35 @@ start_services() {
     log_info "启动基础设施 (MySQL, Redis, Elasticsearch, Milvus)..."
     docker-compose up -d mysql redis elasticsearch etcd minio milvus
 
-    # 等待 MySQL 健康
-    log_info "等待 MySQL 就绪..."
-    for i in $(seq 1 60); do
-        if docker-compose exec -T mysql mysqladmin ping -u root -p1234 --silent 2>/dev/null; then
-            log_info "MySQL 已就绪"
+    # 等待 MySQL 容器被 Docker 标记为 healthy（首次初始化 + SQL 导入可能需要 2-3 分钟）
+    log_info "等待 MySQL 就绪 (首次启动需要初始化数据库，请耐心等待)..."
+    for i in $(seq 1 90); do
+        MYSQL_STATUS=$(docker inspect --format='{{.State.Health.Status}}' bisheng-mysql 2>/dev/null || echo "not_found")
+        if [ "$MYSQL_STATUS" = "healthy" ]; then
+            log_info "MySQL 已就绪 (Docker healthy)"
             break
         fi
-        if [ "$i" -eq 60 ]; then
-            log_warn "MySQL 启动超时，继续尝试..."
+        if [ "$i" -eq 90 ]; then
+            log_warn "MySQL 启动超时 (状态: $MYSQL_STATUS)，尝试继续..."
+        fi
+        if [ $((i % 10)) -eq 0 ]; then
+            log_info "  MySQL 状态: $MYSQL_STATUS ... 已等待 $((i*3)) 秒"
         fi
         sleep 3
     done
 
-    # 等待 Redis 健康
+    # 等待 Redis 容器被 Docker 标记为 healthy
     log_info "等待 Redis 就绪..."
     for i in $(seq 1 30); do
-        if docker-compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
-            log_info "Redis 已就绪"
+        REDIS_STATUS=$(docker inspect --format='{{.State.Health.Status}}' bisheng-redis 2>/dev/null || echo "not_found")
+        if [ "$REDIS_STATUS" = "healthy" ]; then
+            log_info "Redis 已就绪 (Docker healthy)"
             break
         fi
         sleep 2
     done
 
-    # 启动后端
+    # 启动后端（MySQL 和 Redis 此时已确认 healthy）
     log_info "启动后端服务..."
     docker-compose up -d backend backend_worker
 

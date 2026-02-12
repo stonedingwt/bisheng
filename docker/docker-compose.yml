@@ -15,11 +15,11 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/mysql/init:/docker-entrypoint-initdb.d
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "exit | mysql -u root -p$$MYSQL_ROOT_PASSWORD"]
-      start_period: 30s
-      interval: 20s
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p1234", "--silent"]
+      start_period: 120s
+      interval: 10s
       timeout: 10s
-      retries: 4
+      retries: 10
     restart: on-failure
 
   redis:
